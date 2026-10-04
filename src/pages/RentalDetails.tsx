@@ -11,8 +11,9 @@ import {
   Tab,
   Box,
   CircularProgress,
+  Button,
+  Divider,
 } from "@mui/material";
-import { Button, Divider } from "@mui/joy";
 import Header from "../components/common/Header";
 import Footer from "../components/common/Footer";
 import BookingCard from "../components/common/BookingCard";
@@ -22,7 +23,7 @@ import { DetailsComponent } from "../components/CarDetails/DetailsComponent";
 import { TermofUse } from "../components/CarDetails/TermofUse";
 import ConfirmationDialog from "../components/common/ConfirmationDialog";
 import NotificationSnackbar from "../components/common/NotificationSnackbar";
-import { useDispatch } from "react-redux";
+import { useAppDispatch } from "../redux/hooks";
 import {
   confirmEarlyReturn,
   rejectEarlyReturn,
@@ -31,23 +32,29 @@ import {
 import Swal from "sweetalert2";
 
 const RentalDetails = () => {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   // Get id from URL
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const [loading, setLoading] = useState(false);
   // State to store bookingData
-  const [bookingData, setBookingData] = useState(null);
-  const [CarData, setCarData] = useState(null);
+  const [bookingData, setBookingData] = useState<any>(null);
+  const [CarData, setCarData] = useState<any>(null);
   // State to manage selected tab
   const [tabIndex, setTabIndex] = useState(0);
   const [openConfirm, setOpenConfirm] = useState(false);
-  const [confirmAction, setConfirmAction] = useState(null);
-  const [alert, setAlert] = useState({
+  const [confirmAction, setConfirmAction] = useState<(() => Promise<void>) | null>(null);
+  const [alert, setAlert] = useState<{
+    open: boolean;
+    message: string;
+    severity: "info" | "success" | "error" | "warning";
+  }>({
     open: false,
     message: "",
     severity: "success",
   });
+
   const getData = useCallback(async () => {
+    if (!id) return;
     try {
       const bookingResponse = await getRentalsDetail(id);
       const booking = bookingResponse.data;
@@ -56,7 +63,7 @@ const RentalDetails = () => {
       let carDetails = {};
       if (booking.carId) {
         const carResponse = await getCarDetailbyCarOwner(booking.carId);
-        const carData = carResponse.data;
+        const carData = carResponse.data as any;
         setCarData(carData);
         carDetails = {
           brand: carData.brand,
@@ -80,45 +87,50 @@ const RentalDetails = () => {
   useEffect(() => {
     getData();
   }, [getData]);
-  const [initialData, setInitialData] = useState({});
 
-    useEffect(() => {
-        if (bookingData && Object.keys(bookingData).length > 0) {
-            setInitialData({
-                fullName: bookingData.driverFullName || "",
-                phoneNumber: bookingData.driverPhoneNumber || "",
-                email: bookingData.driverEmail || "",
-                nationalId: bookingData.driverNationalId || "",
-                dob: bookingData.driverDob || "",
-                cityProvince: bookingData.driverCityProvince || "",
-                district: bookingData.driverDistrict || "",
-                ward: bookingData.driverWard || "",
-                houseNumberStreet: bookingData.driverHouseNumberStreet || "",
-                drivingLicenseUrl: bookingData.driverDrivingLicenseUrl || null,
-                drivingLicensePreview: bookingData.driverDrivingLicenseUrl || null,
-            });
-        }
-    }, [bookingData]);
-    const handleConfirm = () => {
-        setConfirmAction(() => async () => {
-            try {
-                const data = await confirmBooking(id);
-                setAlert({ open: true, message: "Booking confirmed successfully!", severity: "success" });
-                getData();
-            } catch (error) {
-                setAlert({ open: true, message: error.response?.data?.message || "Failed to confirm booking", severity: "error" });
-            }
-            setOpenConfirm(false);
-        });
-        setOpenConfirm(true);
-    };
-    useEffect(() => {
-        document.title = 'Rental Details';
-    }, []);
-    return (
-        <div>
-            {/* Header */}
-            <Header />
+  const [initialData, setInitialData] = useState<any>({});
+
+  useEffect(() => {
+    if (bookingData && Object.keys(bookingData).length > 0) {
+      setInitialData({
+        fullName: bookingData.driverFullName || "",
+        phoneNumber: bookingData.driverPhoneNumber || "",
+        email: bookingData.driverEmail || "",
+        nationalId: bookingData.driverNationalId || "",
+        dob: bookingData.driverDob || "",
+        cityProvince: bookingData.driverCityProvince || "",
+        district: bookingData.driverDistrict || "",
+        ward: bookingData.driverWard || "",
+        houseNumberStreet: bookingData.driverHouseNumberStreet || "",
+        drivingLicenseUrl: bookingData.driverDrivingLicenseUrl || null,
+        drivingLicensePreview: bookingData.driverDrivingLicenseUrl || null,
+      });
+    }
+  }, [bookingData]);
+
+  const handleConfirm = () => {
+    setConfirmAction(() => async () => {
+      if (!id) return;
+      try {
+        await confirmBooking(id);
+        setAlert({ open: true, message: "Booking confirmed successfully!", severity: "success" });
+        getData();
+      } catch (error: any) {
+        setAlert({ open: true, message: error.response?.data?.message || "Failed to confirm booking", severity: "error" });
+      }
+      setOpenConfirm(false);
+    });
+    setOpenConfirm(true);
+  };
+
+  useEffect(() => {
+    document.title = "Rental Details";
+  }, []);
+
+  return (
+    <div>
+      {/* Header */}
+      <Header />
       {/* Breadcrumbs */}
       <Breadcrumbs sx={{ mx: "auto", maxWidth: "1200px", py: 1, px: 2 }}>
         <Link underline="hover" color="inherit" href="/">
@@ -186,28 +198,20 @@ const RentalDetails = () => {
                       height: "auto",
                     }}
                     onClick={async () => {
-
                       const result = await Swal.fire({
-
                         title: "Are you sure?",
-
                         text: "Do you really want to reject this booking?",
-
                         icon: "warning",
-
                         showCancelButton: true,
-
                         confirmButtonText: "Yes, reject it!",
-
                         cancelButtonText: "No, keep it",
-
                       });
-                      if (result.isConfirmed) {
-                      try {
+                      if (result.isConfirmed && id) {
+                        try {
                           setLoading(true);
-                        await dispatch(rejectRentCar(id)).unwrap(); // Đợi action hoàn tất
-                        getData();
-                      } catch (error) {
+                          await dispatch(rejectRentCar(id)).unwrap(); // Đợi action hoàn tất
+                          getData();
+                        } catch (error) {
                           console.error("Error confirming return:", error);
                         } finally {
                           setLoading(false); // Đảm bảo loading được reset
@@ -243,16 +247,16 @@ const RentalDetails = () => {
                           confirmButtonText: "Yes, approve it!",
                           cancelButtonText: "No, keep it",
                         });
-                        if (result.isConfirmed) {
-                        try {
-                          setLoading(true);
-                          await dispatch(confirmEarlyReturn(id)).unwrap(); // Đợi action hoàn tất
-                          getData();
-                        } catch (error) {
-                          console.error("Error confirming return:", error);
-                        } finally {
-                          setLoading(false); // Đảm bảo loading được reset
-                        }
+                        if (result.isConfirmed && id) {
+                          try {
+                            setLoading(true);
+                            await dispatch(confirmEarlyReturn(id)).unwrap(); // Đợi action hoàn tất
+                            getData();
+                          } catch (error) {
+                            console.error("Error confirming return:", error);
+                          } finally {
+                            setLoading(false); // Đảm bảo loading được reset
+                          }
                         }
                       }}
                     >
@@ -287,7 +291,7 @@ const RentalDetails = () => {
                           confirmButtonText: "Yes, reject it!",
                           cancelButtonText: "No, keep it",
                         });
-                        if (result.isConfirmed) {
+                        if (result.isConfirmed && id) {
                           try {
                             setLoading(true);
                             await dispatch(rejectEarlyReturn(id)).unwrap(); // Đợi action hoàn tất
@@ -310,7 +314,7 @@ const RentalDetails = () => {
               <ConfirmationDialog
                 open={openConfirm}
                 onClose={() => setOpenConfirm(false)}
-                onConfirm={confirmAction}
+                onConfirm={confirmAction || (() => {})}
                 title="Confirm Action"
                 content="Are you sure you want to confirm this booking request?"
               />
@@ -323,37 +327,38 @@ const RentalDetails = () => {
         </Box>
       </Box>
 
-            {/* Tabs */}
-            <Box sx={{ maxWidth: "1200px", mx: "auto", mt: 4, mb: 4 }}>
-                <Tabs value={tabIndex} onChange={(event, newValue) => setTabIndex(newValue)}>
-                    <Tab label="Rental Information" />
-                    <Tab label="Car Information" />
-                </Tabs>
+      {/* Tabs */}
+      <Box sx={{ maxWidth: "1200px", mx: "auto", mt: 4, mb: 4 }}>
+        <Tabs value={tabIndex} onChange={(event, newValue) => setTabIndex(newValue)}>
+          <Tab label="Rental Information" />
+          <Tab label="Car Information" />
+        </Tabs>
 
-                {/* Tab Content */}
-                <Box sx={{
-                    border: "1px solid #ccc",
-                    padding: 2,
-                    textAlign: "left",
-                    borderRadius: 1,
-                    m: 0
-                }}>
-                    {tabIndex === 0 && initialData && (
-                        <PersonalInformation key={JSON.stringify(initialData)} initialData={initialData} onlyView={true} />
-                    )}
+        {/* Tab Content */}
+        <Box sx={{
+          border: "1px solid #ccc",
+          padding: 2,
+          textAlign: "left",
+          borderRadius: 1,
+          m: 0
+        }}>
+          {tabIndex === 0 && initialData && (
+            <PersonalInformation key={JSON.stringify(initialData)} initialData={initialData} onlyView={true} />
+          )}
 
-                    {tabIndex === 1 && <div>
-                        <BasicInformation CarData={CarData} />
-                        <Divider sx={{ my: 2 }} />
-                        <DetailsComponent CarData={CarData} />
-                        <Divider sx={{ my: 2 }} />
-                        <TermofUse CarData={CarData} />
-                    </div>}
-                </Box>
-            </Box>
-            {/* Footer */}
-            <Footer />
-        </div>
-    )
-}
+          {tabIndex === 1 && <div>
+            <BasicInformation CarData={CarData} />
+            <Divider sx={{ my: 2 }} />
+            <DetailsComponent CarData={CarData} />
+            <Divider sx={{ my: 2 }} />
+            <TermofUse CarData={CarData} />
+          </div>}
+        </Box>
+      </Box>
+      {/* Footer */}
+      <Footer />
+    </div>
+  );
+};
+
 export default RentalDetails;

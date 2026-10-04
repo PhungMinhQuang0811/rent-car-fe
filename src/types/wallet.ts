@@ -19,8 +19,10 @@ export interface TransactionResponse {
 }
 
 export interface ListTransactionResponse {
-  transactions: TransactionResponse[];
-  currentBalance: number;
+  transactions?: TransactionResponse[];
+  listTransactionResponse?: any[];
+  currentBalance?: number;
+  balance?: number;
 }
 
 export interface WalletResponse {

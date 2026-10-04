@@ -5,6 +5,7 @@ import {
   EditPasswordRequest,
   EditProfileResponse,
   LoginRequest,
+  LoginResponse,
   UserResponse,
 } from "../types";
 
@@ -51,7 +52,7 @@ export const checkUniqueEmail = async (email: { email: string }): Promise<any> =
 
 export const login = async (
   userData: LoginRequest
-): Promise<ApiResponse<UserResponse>> => {
+): Promise<ApiResponse<LoginResponse>> => {
   try {
     const response = await fetch(`${BASE_URL}/auth/login`, {
       method: "POST",

@@ -1,9 +1,7 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { getUserProfile } from "../services/UserServices";
 import PersonalInformation from "../components/User/PersonalInfomation";
 import SecurityChangePassword from "../components/User/ChangePassword";
-import Header from "../components/common/Header";
-import Footer from "../components/common/Footer"
 import {
   Breadcrumbs,
   Link,
@@ -12,17 +10,21 @@ import {
   Tabs,
   Tab,
 } from "@mui/material";
-import Layout from "../components/common/Layout"
+import Layout from "../components/common/Layout";
 import LoadingComponent from "../components/common/LoadingComponent";
+import { UserProfile } from "../types/user";
+
 export default function UserProfilePage() {
-  const [userData, setUserData] = useState(null);
+  const [userData, setUserData] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedTab, setSelectedTab] = useState(0); // Quản lý tab được chọn
+  const [selectedTab, setSelectedTab] = useState(0);
+
   useEffect(() => {
-    document.title = 'User Profile';
-  }, []); 
+    document.title = "User Profile";
+  }, []);
+
   useEffect(() => {
-    async function getUserData() {
+    async function fetchUserData() {
       try {
         const response = await getUserProfile();
         setUserData(response.data);
@@ -32,12 +34,12 @@ export default function UserProfilePage() {
         setLoading(false);
       }
     }
-    getUserData();
+    fetchUserData();
   }, []);
 
-  if (loading) return <LoadingComponent/>;
+  if (loading) return <LoadingComponent />;
 
-  const handleTabChange = (event, newValue) => {
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setSelectedTab(newValue);
   };
 
@@ -52,7 +54,11 @@ export default function UserProfilePage() {
 
       <Box sx={{ width: "100%", maxWidth: "1200px", mx: "auto", mb: 5 }}>
         {/* Tabs */}
-        <Tabs value={selectedTab} onChange={handleTabChange} aria-label="user profile tabs" >
+        <Tabs
+          value={selectedTab}
+          onChange={handleTabChange}
+          aria-label="user profile tabs"
+        >
           <Tab id="tab-user-info" label="User Info" />
           <Tab id="tab-change-password" label="Change Password" />
         </Tabs>
@@ -65,7 +71,7 @@ export default function UserProfilePage() {
             padding: 2,
             textAlign: "left",
             borderRadius: 1,
-            m: 0
+            m: 0,
           }}
         >
           <PersonalInformation initialData={userData} />

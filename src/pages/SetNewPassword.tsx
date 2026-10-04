@@ -9,15 +9,15 @@ import {
 } from "../services/UserServices";
 
 const SetNewPassword = () => {
-  const [newPass, setNewPass] = useState([]);
-  const [confirmNewPass, setConfirmNewPass] = useState([]);
+  const [newPass, setNewPass] = useState("");
+  const [confirmNewPass, setConfirmNewPass] = useState("");
   // state for showing password or not
   const [showPassword, setShowPassword] = useState(false);
   const handleClickShowPassword = () => setShowPassword((show) => !show);
-  const handleMouseUp = (event) => {
+  const handleMouseUp = (event: React.MouseEvent) => {
     event.preventDefault();
   };
-  const handleMouseDown = (event) => {
+  const handleMouseDown = (event: React.MouseEvent) => {
     event.preventDefault();
   };
   const [searchParams] = useSearchParams();
@@ -33,59 +33,57 @@ const SetNewPassword = () => {
         const response = await forgotPasswordVerify(tokenFromParams);
         if (response) {
           console.log("Verify OK");
-        } else return;
-      } catch (error) {
-        alert(error);
+        }
+      } catch (error: any) {
+        alert(error?.message || error);
       }
     };
     verifyPasswordToken();
-    // nav("/auth/forgot-password/verify")
-  }, []);
+  }, [searchParams]);
   const nav = useNavigate();
-  const validatePassword = (password) => {
+  const validatePassword = (password: string) => {
     return !/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*?&]{9,}$/.test(password)
       ? "Invalid password format"
       : "";
   };
-  const [errors, setErrors] = useState({});
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [errorMatch, setErrorMatch] = useState("");
 
-
-
-  const handlePasswordChange = (e) => {
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setNewPass(value);
-  
+
     const error = validatePassword(value);
     setErrors((prevErrors) => ({
       ...prevErrors,
       password: error || "",
     }));
-
   };
-  
-  const handleConfPasswordChange = (e) => {
+
+  const handleConfPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setConfirmNewPass(value);
-  
+
     const error = validatePassword(value);
     setErrors((prevErrors) => ({
       ...prevErrors,
       confirmPassword: error || "",
     }));
-  
-    
   };
+
   // run except first render
-  const firstRender = useRef(true)
-  useEffect(()=>{
-    if(firstRender.current){
-      firstRender.current=false;
+  const firstRender = useRef(true);
+  useEffect(() => {
+    if (firstRender.current) {
+      firstRender.current = false;
       return;
     }
-    setErrorMatch(newPass !== confirmNewPass ? "Password and Confirm Password must match" : "");
-  },[newPass, confirmNewPass])
-    const handleChangePassword = () => {
+    setErrorMatch(
+      newPass !== confirmNewPass ? "Password and Confirm Password must match" : ""
+    );
+  }, [newPass, confirmNewPass]);
+
+  const handleChangePassword = () => {
     if (newPass !== confirmNewPass) {
       alert("Password and Confirm Password must match");
       return;
@@ -98,20 +96,20 @@ const SetNewPassword = () => {
       forgotPasswordToken: token,
       newPassword: newPass,
     };
-    const changePassword = async (formChangePassword) => {
+    const changePassword = async (data: typeof formChangePassword) => {
       try {
-        const response = await forgotPasswordChange(formChangePassword);
+        const response = await forgotPasswordChange(data);
         if (response) {
-          alert(response.data.message);
+          alert((response.data as any)?.message || "Password changed successfully");
           nav("/");
         }
-      } catch (error) {
-        alert(error);
-        return;
+      } catch (error: any) {
+        alert(error?.message || error);
       }
     };
     changePassword(formChangePassword);
   };
+
   return (
     <Layout>
       <Mui.Box
@@ -168,7 +166,7 @@ const SetNewPassword = () => {
             type={showPassword ? "text" : "password"}
             InputProps={{
               endAdornment: (
-                <Mui.InputAdornment>
+                <Mui.InputAdornment position="end">
                   <Mui.IconButton
                     onClick={handleClickShowPassword}
                     onMouseUp={handleMouseUp}
@@ -184,36 +182,36 @@ const SetNewPassword = () => {
               ),
             }}
           />
-          {errorMatch && <Mui.Typography color="red">{errorMatch}</Mui.Typography>}
-          <Mui.Button
-          
-                sx={{
-                  marginTop:"30px",
-                  width: 150,
-                  height: 50,
-                  borderRadius: 2,
-                  border: "solid ",
-                  borderColor: "#05ce80",
-                  backgroundColor: "white",
-                  marginInline: 2,
-                  color: "#05ce80",
-                  "&:hover": {
-                    backgroundColor: "#05ce80",
-                    borderColor: "#05ce80",
-                    color: "white",
-                  },
-                }}
-               // onClick={nav("/login-register")}
-              >
-                Cancel
-              </Mui.Button>
+          {errorMatch && (
+            <Mui.Typography color="red">{errorMatch}</Mui.Typography>
+          )}
           <Mui.Button
             sx={{
-              marginTop:"30px",
+              marginTop: "30px",
               width: 150,
               height: 50,
               borderRadius: 2,
-
+              border: "solid ",
+              borderColor: "#05ce80",
+              backgroundColor: "white",
+              marginInline: 2,
+              color: "#05ce80",
+              "&:hover": {
+                backgroundColor: "#05ce80",
+                borderColor: "#05ce80",
+                color: "white",
+              },
+            }}
+            onClick={() => nav("/login-register")}
+          >
+            Cancel
+          </Mui.Button>
+          <Mui.Button
+            sx={{
+              marginTop: "30px",
+              width: 150,
+              height: 50,
+              borderRadius: 2,
               backgroundColor: "#05ce80",
               marginInline: 2,
               color: "white",
@@ -230,8 +228,6 @@ const SetNewPassword = () => {
           >
             Change Password
           </Mui.Button>
-
-          
         </Mui.Box>
       </Mui.Box>
     </Layout>

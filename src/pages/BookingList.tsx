@@ -1,57 +1,59 @@
 import Header from "../components/common/Header";
 import Footer from "../components/common/Footer";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, Link as RouterLink } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { useDispatch } from "react-redux";
 import ListCard from "../components/common/ListCard";
 import {
   Breadcrumbs,
-  Link,
+  Link as MuiLink,
   Typography,
   Box,
   FormControl,
   MenuItem,
-  Select,
   TextField,
   CircularProgress,
+  Grid,
+  Button,
+  Divider,
 } from "@mui/material";
-import { Grid, Divider, Button } from "@mui/joy";
-import { useNavigate } from "react-router-dom";
 import Pagination from "../components/common/Pagination";
 import {
   getBookingListOperator,
   confirmDeposit,
   rejectDeposit,
 } from "../reducers/carFetchReducer";
+import { useAppDispatch } from "../redux/hooks";
 import Swal from "sweetalert2";
 
-export const BookingList = () => {
-  const navigate = useNavigate();
-  const dispatch = useDispatch();
+export const BookingList: React.FC = () => {
+  const dispatch = useAppDispatch();
 
   const [loading, setLoading] = useState(false);
   const [totalElement, setTotalElement] = useState(0);
-  const [bookingData, setBookingData] = useState(null);
+  const [bookingData, setBookingData] = useState<any[] | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const [page, setPage] = useState(parseInt(searchParams.get("page")) || 1);
-  const [pageSize, setPageSize] = useState(
-    parseInt(searchParams.get("size")) || 10
+  const [page, setPage] = useState<number>(
+    parseInt(searchParams.get("page") || "1", 10)
   );
-  const [statusFilter, setStatusFilter] = useState(
+  const [pageSize, setPageSize] = useState<number>(
+    parseInt(searchParams.get("size") || "10", 10)
+  );
+  const [statusFilter, setStatusFilter] = useState<string>(
     searchParams.get("status") || "ALL"
   );
 
-  //total page
-  const [totalPages, setTotalPages] = useState(1);
+  // total page
+  const [totalPages, setTotalPages] = useState<number>(1);
 
   // sort mapping
-  const sortMapping = {
+  const sortMapping: Record<string, string> = {
     "updatedAt,DESC": "newest",
     "updatedAt,ASC": "oldest",
     "basePrice,DESC": "priceHigh",
     "basePrice,ASC": "priceLow",
   };
+
   // sort status
   const statusOptions = [
     "ALL",
@@ -64,8 +66,9 @@ export const BookingList = () => {
     "COMPLETED",
     "WAITING_CONFIRMED_RETURN_CAR",
   ];
+
   // sort query
-  const getSortQuery = (option) =>
+  const getSortQuery = (option: string) =>
     ({
       newest: "updatedAt,DESC",
       oldest: "updatedAt,ASC",
@@ -74,15 +77,19 @@ export const BookingList = () => {
     }[option] || "updatedAt,DESC");
 
   const validStatuses = new Set(statusOptions.slice(1));
-  const [sortOption, setSortOption] = useState(
-    sortMapping[searchParams.get("sort")] || "newest"
+  const [sortOption, setSortOption] = useState<string>(
+    sortMapping[searchParams.get("sort") || ""] || "newest"
   );
+
+  useEffect(() => {
+    document.title = "Booking List";
+  }, []);
 
   // function to handle page change
   useEffect(() => {
-    const params = {
-      page,
-      size: pageSize,
+    const params: Record<string, string> = {
+      page: String(page),
+      size: String(pageSize),
       sort: getSortQuery(sortOption),
     };
 
@@ -95,26 +102,17 @@ export const BookingList = () => {
 
   const fetchMyBookings = async () => {
     try {
-      const params = {
-        page: page - 1,
-        size: pageSize,
-        sort: getSortQuery(sortOption),
-      };
-
-      if (validStatuses.has(statusFilter)) {
-        params.status = statusFilter;
-      }
       const response = await dispatch(
         getBookingListOperator({
-          page: page - 1 || 0,
+          page: (page - 1) || 0,
           size: pageSize || 10,
           sort: getSortQuery(sortOption) || "updatedAt,DESC",
           status: statusFilter === "ALL" ? null : statusFilter,
         })
       ).unwrap();
-      setBookingData(response.data.bookings.content || []);
-      setTotalElement(response.data.totalOnGoingBookings || 0);
-      setTotalPages(response.data.bookings.totalPages);
+      setBookingData(response.data?.bookings?.content || []);
+      setTotalElement(response.data?.totalOnGoingBookings || 0);
+      setTotalPages(response.data?.bookings?.totalPages || 1);
     } catch (error) {
       console.error("Failed to fetch booking data:", error);
     }
@@ -128,9 +126,9 @@ export const BookingList = () => {
     <div>
       <Header />
       <Breadcrumbs sx={{ mx: "auto", maxWidth: "1200px", py: 1, px: 2 }}>
-        <Link underline="hover" color="inherit" href="/">
+        <MuiLink underline="hover" color="inherit" component={RouterLink} to="/">
           Home
-        </Link>
+        </MuiLink>
         <Typography color="text.primary">Booking List</Typography>
       </Breadcrumbs>
       <Box
@@ -219,7 +217,7 @@ export const BookingList = () => {
               className="booking-item"
               data-booking-id={booking.bookingNumber || ""}
               data-status={booking.status || ""}
-              data-basePrice={booking.basePrice || ""}
+              data-baseprice={booking.basePrice || ""}
               item
               xs={12}
               md={12}
@@ -248,96 +246,97 @@ export const BookingList = () => {
                     marginTop: "40px",
                   }}
                 >
-                  {(booking.status === "PENDING_DEPOSIT" && booking.paymentType !== "WALLET") && (
-                    <>
-                      <Button
-                        variant="contained"
-                        disabled={loading}
-                        sx={{
-                          backgroundColor: "#05ce80",
-                          color: "white",
-                          "&:hover": { backgroundColor: "green" },
-                          width: "100%",
-                          paddingY: 1.2,
-                          paddingX: 2,
-                          height: "auto",
-                        }}
-                        onClick={async () => {
-                          const result = await Swal.fire({
-                            title: "Are you sure?",
-                            text: "Do you really want to confirm this booking?",
-                            icon: "warning",
-                            showCancelButton: true,
-                            confirmButtonText: "Yes, confirm it!",
-                            cancelButtonText: "No, keep it",
-                          });
+                  {booking.status === "PENDING_DEPOSIT" &&
+                    booking.paymentType !== "WALLET" && (
+                      <>
+                        <Button
+                          variant="contained"
+                          disabled={loading}
+                          sx={{
+                            backgroundColor: "#05ce80",
+                            color: "white",
+                            "&:hover": { backgroundColor: "green" },
+                            width: "100%",
+                            paddingY: 1.2,
+                            paddingX: 2,
+                            height: "auto",
+                          }}
+                          onClick={async () => {
+                            const result = await Swal.fire({
+                              title: "Are you sure?",
+                              text: "Do you really want to confirm this booking?",
+                              icon: "warning",
+                              showCancelButton: true,
+                              confirmButtonText: "Yes, confirm it!",
+                              cancelButtonText: "No, keep it",
+                            });
 
-                          if (result.isConfirmed) {
-                            try {
-                              setLoading(true);
-                              await dispatch(
-                                confirmDeposit(booking.bookingNumber)
-                              ).unwrap();
-                              fetchMyBookings();
-                            } catch (error) {
-                              console.error("Error rejecting booking:", error);
-                            } finally {
-                              setLoading(false); // Đảm bảo loading được reset
+                            if (result.isConfirmed) {
+                              try {
+                                setLoading(true);
+                                await dispatch(
+                                  confirmDeposit(booking.bookingNumber)
+                                ).unwrap();
+                                fetchMyBookings();
+                              } catch (error) {
+                                console.error("Error confirming booking:", error);
+                              } finally {
+                                setLoading(false);
+                              }
                             }
-                          }
-                        }}
-                      >
-                        {loading ? (
-                          <CircularProgress size={20} color="inherit" />
-                        ) : (
-                          "Confirm"
-                        )}
-                      </Button>
-                      <Button
-                        variant="contained"
-                        disabled={loading}
-                        sx={{
-                          backgroundColor: "red",
-                          color: "white",
-                          "&:hover": { backgroundColor: "darkred" },
-                          width: "100%",
-                          paddingY: 1.2,
-                          paddingX: 2,
-                          height: "auto",
-                        }}
-                        onClick={async () => {
-                          const result = await Swal.fire({
-                            title: "Are you sure?",
-                            text: "Do you really want to reject this booking?",
-                            icon: "warning",
-                            showCancelButton: true,
-                            confirmButtonText: "Yes, reject it!",
-                            cancelButtonText: "No, keep it",
-                          });
+                          }}
+                        >
+                          {loading ? (
+                            <CircularProgress size={20} color="inherit" />
+                          ) : (
+                            "Confirm"
+                          )}
+                        </Button>
+                        <Button
+                          variant="contained"
+                          disabled={loading}
+                          sx={{
+                            backgroundColor: "red",
+                            color: "white",
+                            "&:hover": { backgroundColor: "darkred" },
+                            width: "100%",
+                            paddingY: 1.2,
+                            paddingX: 2,
+                            height: "auto",
+                          }}
+                          onClick={async () => {
+                            const result = await Swal.fire({
+                              title: "Are you sure?",
+                              text: "Do you really want to reject this booking?",
+                              icon: "warning",
+                              showCancelButton: true,
+                              confirmButtonText: "Yes, reject it!",
+                              cancelButtonText: "No, keep it",
+                            });
 
-                          if (result.isConfirmed) {
-                            try {
-                              setLoading(true);
-                              await dispatch(
-                                rejectDeposit(booking.bookingNumber)
-                              ).unwrap();
-                              fetchMyBookings();
-                            } catch (error) {
-                              console.error("Error rejecting booking:", error);
-                            } finally {
-                              setLoading(false); // Đảm bảo loading được reset
+                            if (result.isConfirmed) {
+                              try {
+                                setLoading(true);
+                                await dispatch(
+                                  rejectDeposit(booking.bookingNumber)
+                                ).unwrap();
+                                fetchMyBookings();
+                              } catch (error) {
+                                console.error("Error rejecting booking:", error);
+                              } finally {
+                                setLoading(false);
+                              }
                             }
-                          }
-                        }}
-                      >
-                        {loading ? (
-                          <CircularProgress size={20} color="inherit" />
-                        ) : (
-                          "Reject"
-                        )}
-                      </Button>
-                    </>
-                  )}
+                          }}
+                        >
+                          {loading ? (
+                            <CircularProgress size={20} color="inherit" />
+                          ) : (
+                            "Reject"
+                          )}
+                        </Button>
+                      </>
+                    )}
                 </Grid>
               </Grid>
               <Divider sx={{ mt: 2 }} />
@@ -361,3 +360,5 @@ export const BookingList = () => {
     </div>
   );
 };
+
+export default BookingList;

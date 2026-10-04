@@ -350,7 +350,7 @@ export const saveBooking = createAsyncThunk(
   }
 );
 
-export const cancelBooking = createAsyncThunk(
+export const cancelBooking = createAsyncThunk<any, string | number>(
   "rentCar/cancelBooking",
   async (bookingNumber, { getState, rejectWithValue }) => {
     try {
@@ -415,7 +415,7 @@ export const cancelBooking = createAsyncThunk(
   }
 );
 
-export const confirmPickup = createAsyncThunk(
+export const confirmPickup = createAsyncThunk<any, string | number>(
   "rentCar/confirmPickup",
   async (bookingNumber, { getState, rejectWithValue }) => {
     try {
@@ -484,7 +484,7 @@ export const confirmPickup = createAsyncThunk(
   }
 );
 
-export const returnCar = createAsyncThunk(
+export const returnCar = createAsyncThunk<any, string | number>(
   "rentCar/returnCar",
   async (bookingNumber, { getState, rejectWithValue }) => {
     try {
@@ -553,7 +553,7 @@ export const returnCar = createAsyncThunk(
   }
 );
 
-export const confirmEarlyReturn = createAsyncThunk(
+export const confirmEarlyReturn = createAsyncThunk<any, string | number>(
   "rentCar/confirmEarlyReturn",
   async (bookingNumber, { rejectWithValue }) => {
     try {
@@ -622,7 +622,7 @@ export const confirmEarlyReturn = createAsyncThunk(
   }
 );
 
-export const rejectEarlyReturn = createAsyncThunk(
+export const rejectEarlyReturn = createAsyncThunk<any, string | number>(
   "rentCar/rejectEarlyReturn",
   async (bookingNumber, { rejectWithValue }) => {
     try {
@@ -691,7 +691,7 @@ export const rejectEarlyReturn = createAsyncThunk(
   }
 );
 
-export const rejectRentCar = createAsyncThunk(
+export const rejectRentCar = createAsyncThunk<any, string | number>(
   "rentCar/rejectRentCar",
   async (bookingNumber, { rejectWithValue }) => {
     try {
@@ -760,7 +760,7 @@ export const rejectRentCar = createAsyncThunk(
   }
 );
 
-export const payDepositAgain = createAsyncThunk(
+export const payDepositAgain = createAsyncThunk<any, string | number>(
   "rentCar/payDepositAgain",
   async (bookingNumber, { rejectWithValue }) => {
     try {
@@ -832,7 +832,7 @@ export const payDepositAgain = createAsyncThunk(
   }
 );
 
-export const payTotalFee = createAsyncThunk(
+export const payTotalFee = createAsyncThunk<any, { bookingNumber: string; status?: string }>(
   "rentCar/payTotalFee",
   async (
     { bookingNumber, status }: { bookingNumber: string; status?: string },

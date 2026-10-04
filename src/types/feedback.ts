@@ -16,11 +16,13 @@ export interface FeedbackDetailResponse {
 }
 
 export interface RatingOverview {
-  averageRating: number;
-  totalRatings: number;
-  oneStarCount: number;
-  twoStarCount: number;
-  threeStarCount: number;
-  fourStarCount: number;
-  fiveStarCount: number;
+  averageRating?: number;
+  averageRatingByOwner?: number;
+  ratingCounts?: Record<string, number>;
+  totalRatings?: number;
+  oneStarCount?: number;
+  twoStarCount?: number;
+  threeStarCount?: number;
+  fourStarCount?: number;
+  fiveStarCount?: number;
 }

@@ -33,6 +33,8 @@ export interface Car {
   numberOfTrips?: number;
 }
 
+export type CarResponse = Car & { [key: string]: any };
+
 export interface CarSearchParams {
   address?: string;
   pickUpTime?: string;

@@ -7,6 +7,12 @@ export interface UserResponse {
   role: ERole;
 }
 
+export interface LoginResponse {
+  userRole: ERole;
+  fullName: string;
+  csrfToken: string;
+}
+
 export interface EditProfileResponse {
   fullName: string;
   dob: string;

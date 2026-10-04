@@ -215,7 +215,10 @@ export const getCarDetail = createAsyncThunk(
   }
 );
 
-export const getBookingListOperator = createAsyncThunk(
+export const getBookingListOperator = createAsyncThunk<
+  any,
+  { page?: number; size?: number; sort?: string; status?: string | null }
+>(
   "carFetch/getBookingListOperator",
   async (
     {
@@ -267,7 +270,7 @@ export const getBookingListOperator = createAsyncThunk(
   }
 );
 
-export const confirmDeposit = createAsyncThunk(
+export const confirmDeposit = createAsyncThunk<any, string>(
   "carFetch/confirmDeposit",
   async (bookingNumber: string, { rejectWithValue }) => {
     try {
@@ -332,7 +335,7 @@ export const confirmDeposit = createAsyncThunk(
   }
 );
 
-export const rejectDeposit = createAsyncThunk(
+export const rejectDeposit = createAsyncThunk<any, string>(
   "carFetch/rejectDeposit",
   async (bookingNumber: string, { rejectWithValue }) => {
     try {

@@ -9,9 +9,9 @@ export interface BookingSearchParams extends PaginationParams {
 
 export const getMyBookings = async (
   searchParams: BookingSearchParams
-): Promise<ApiResponse<PageResponse<Booking>>> => {
+): Promise<ApiResponse<any>> => {
   try {
-    const response = await axios.get<ApiResponse<PageResponse<Booking>>>(
+    const response = await axios.get<ApiResponse<any>>(
       `${BOOK_URL}/customer/my-bookings`,
       {
         params: {
@@ -36,9 +36,9 @@ export const getMyBookings = async (
 
 export const getMyRentals = async (
   searchParams: BookingSearchParams
-): Promise<ApiResponse<PageResponse<Booking>>> => {
+): Promise<ApiResponse<any>> => {
   try {
-    const response = await axios.get<ApiResponse<PageResponse<Booking>>>(
+    const response = await axios.get<ApiResponse<any>>(
       `${BOOK_URL}/car-owner/rentals`,
       {
         params: {
@@ -61,10 +61,10 @@ export const getMyRentals = async (
   }
 };
 
-export const getRentalsDetail = async (id: string): Promise<ApiResponse<Booking>> => {
+export const getRentalsDetail = async (id: string): Promise<ApiResponse<any>> => {
   try {
     const requestUrl = `${BOOK_URL}/car-owner/${id}`;
-    const response = await axios.get<ApiResponse<Booking>>(requestUrl, {
+    const response = await axios.get<ApiResponse<any>>(requestUrl, {
       headers: {
         "Content-Type": "application/json",
       },

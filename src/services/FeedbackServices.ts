@@ -68,9 +68,9 @@ export const sendFeedback = async ({
 
 export const getFeedbackByCarOwner = async (
   searchParams: FeedbackSearchParams
-): Promise<ApiResponse<PageResponse<FeedbackResponse>>> => {
+): Promise<ApiResponse<any>> => {
   try {
-    const response = await axios.get<ApiResponse<PageResponse<FeedbackResponse>>>(
+    const response = await axios.get<ApiResponse<any>>(
       `${BASE_URL}/car-owner/my-feedbacks`,
       {
         params: {
@@ -134,9 +134,9 @@ export const getAverageRating = async (): Promise<ApiResponse<RatingOverview>> =
 
 export const getFeedbackByCustomer = async (
   searchParams: PaginationParams
-): Promise<ApiResponse<PageResponse<FeedbackResponse>>> => {
+): Promise<ApiResponse<any>> => {
   try {
-    const response = await axios.get<ApiResponse<PageResponse<FeedbackResponse>>>(
+    const response = await axios.get<ApiResponse<any>>(
       `${BASE_URL}/customer/view-feedbacks`,
       {
         params: {

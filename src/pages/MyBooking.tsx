@@ -4,12 +4,11 @@ import { useSearchParams } from "react-router-dom";
 import BookingCard from "../components/common/BookingCard";
 import { useEffect, useState } from "react";
 import { getMyBookings } from "../services/BookingServices";
-import { Breadcrumbs, Link, Typography, Box, CircularProgress,Grid} from "@mui/material";
-import {  Divider, Button } from "@mui/joy";
+import { Breadcrumbs, Link, Typography, Box, CircularProgress, Grid, Button, Divider } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import Filters from "../components/common/Filter";
 import Pagination from "../components/common/Pagination"
-import { useDispatch } from "react-redux";
+import { useAppDispatch } from "../redux/hooks";
 import { getBookingDetail, getWallet, cancelBooking, confirmPickup, returnCar, payDepositAgain, payTotalFee, } from "../reducers/rentCarReducer";
 import Swal from "sweetalert2";
 import NoFeedbackMessage from "../components/Feedback/NoDataMessage";
@@ -19,11 +18,11 @@ import utc from "dayjs/plugin/utc";
 const MyBooking = () => {
   const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
-    const dispatch = useDispatch();
+    const dispatch = useAppDispatch();
     // State store total on-going booking count
   const [totalElement, setTotalElement] = useState(0);
     // State store booking data of customer
-  const [bookingData, setBookingData] = useState(null);
+  const [bookingData, setBookingData] = useState<any[] | null>(null);
     // State handle search params
   const [searchParams, setSearchParams] = useSearchParams();
     // State handle change status filter
@@ -31,13 +30,13 @@ const MyBooking = () => {
     searchParams.get("status") || "ALL"
   );
     // State to handle pagination
-    const [page, setPage] = useState(parseInt(searchParams.get("page")) || 1);
+    const [page, setPage] = useState(parseInt(searchParams.get("page") || "1", 10));
   const [pageSize, setPageSize] = useState(
-    parseInt(searchParams.get("size")) || 10
+    parseInt(searchParams.get("size") || "10", 10)
   );
   const [totalPages, setTotalPages] = useState(1);
     // Function to mapping sort query to sort value
-  const sortMapping = {
+  const sortMapping: Record<string, string> = {
     "updatedAt,DESC": "newest",
     "updatedAt,ASC": "oldest",
     "basePrice,DESC": "priceHigh",
@@ -59,10 +58,10 @@ const MyBooking = () => {
   const validStatuses = new Set(statusOptions.slice(1));
     // Initialize sort option, default newest(updatedAt,DESC)
   const [sortOption, setSortOption] = useState(
-    sortMapping[searchParams.get("sort")] || "newest"
+    sortMapping[searchParams.get("sort") || ""] || "newest"
   );
     // Function get sort query
-  const getSortQuery = (option) =>
+  const getSortQuery = (option: string) =>
     ({
       newest: "updatedAt,DESC",
       oldest: "updatedAt,ASC",
@@ -71,9 +70,9 @@ const MyBooking = () => {
     }[option] || "updatedAt,DESC");
     // Update search params when dependencies changes
     useEffect(() => {
-        const params = {
-            page,
-            size: pageSize,
+        const params: Record<string, string> = {
+            page: String(page),
+            size: String(pageSize),
             sort: getSortQuery(sortOption),
         };
 
@@ -81,12 +80,11 @@ const MyBooking = () => {
             params.status = statusFilter;
         }
 
-
     setSearchParams(params);
   }, [sortOption, page, pageSize, statusFilter, setSearchParams]);
     const fetchMyBookings = async () => {
       try {
-        const params = {
+        const params: any = {
           page: page - 1,
           size: pageSize,
           sort: getSortQuery(sortOption),
@@ -95,9 +93,9 @@ const MyBooking = () => {
                     params.status = statusFilter;
                 }
                 const response = await getMyBookings(params);
-                setBookingData(response.data.bookings.content || []);
-                setTotalElement(response.data.totalOnGoingBookings || 0);
-                setTotalPages(response.data.bookings.totalPages);
+                setBookingData(response.data?.bookings?.content || []);
+                setTotalElement(response.data?.totalOnGoingBookings || 0);
+                setTotalPages(response.data?.bookings?.totalPages || 1);
             } catch (error) {
                 console.error("Failed to fetch booking data:", error);
         } finally { setLoading(false) }
