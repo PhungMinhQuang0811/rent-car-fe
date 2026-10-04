@@ -106,6 +106,8 @@ export interface AddressSelectorProps {
   isSearch?: boolean;
   useRedux?: boolean;
   onlyView?: boolean;
+  disabled?: boolean;
+  includeHouseNumber?: boolean;
 }
 
 export default function AddressSelector({

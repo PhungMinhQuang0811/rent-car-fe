@@ -8,6 +8,7 @@ export interface PasswordInputProps {
   name: string;
   value: string;
   onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onBlur?: React.FocusEventHandler<HTMLInputElement | HTMLTextAreaElement>;
   showPassword?: boolean;
   onTogglePassword: (name: string) => void;
   error?: boolean;
@@ -19,6 +20,7 @@ const PasswordInput: React.FC<PasswordInputProps> = ({
   name,
   value,
   onChange,
+  onBlur,
   showPassword,
   onTogglePassword,
   error,
@@ -28,6 +30,7 @@ const PasswordInput: React.FC<PasswordInputProps> = ({
     fullWidth
     label={label}
     name={name}
+    onBlur={onBlur}
     variant="standard"
     type={showPassword ? "text" : "password"}
     value={value}

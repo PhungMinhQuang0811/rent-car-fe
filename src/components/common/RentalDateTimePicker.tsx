@@ -12,9 +12,10 @@ dayjs.extend(utc);
 
 interface RentalDatePickerProps {
     available?: boolean | null;
+    onRentalTimeChange?: (pickUp: string, dropOff: string) => void;
 }
 
-const RentalDatePicker: React.FC<RentalDatePickerProps> = ({ available }) => {
+const RentalDatePicker: React.FC<RentalDatePickerProps> = ({ available, onRentalTimeChange }) => {
     const dispatch = useAppDispatch();
     const [openPicker, setOpenPicker] = useState<boolean>(false);
 
@@ -132,6 +133,9 @@ const RentalDatePicker: React.FC<RentalDatePickerProps> = ({ available }) => {
 
     const handleRentalTimeChange = (newPickUpTime: string, newDropOffTime: string) => {
         dispatch(setRentalTime({ pickUpTime: newPickUpTime, dropOffTime: newDropOffTime }));
+        if (onRentalTimeChange) {
+            onRentalTimeChange(newPickUpTime, newDropOffTime);
+        }
     };
 
     const handleConfirm = () => {

@@ -213,7 +213,7 @@ export const createBooking = createAsyncThunk(
 
 export const getBookingDetail = createAsyncThunk(
   "rentCar/getBookingDetail",
-  async (bookedId, { rejectWithValue }) => {
+  async (bookedId: string | number, { rejectWithValue }) => {
     try {
       const response = await axios.get(
         `${BASE_URL}/booking/customer/${bookedId}`,

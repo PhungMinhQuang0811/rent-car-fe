@@ -6,6 +6,8 @@ export interface FileUploadProps {
   onFileChange: (file: File) => void;
   preview?: string;
   disabled?: boolean;
+  value?: any;
+  sx?: any;
 }
 
 export default function FileUpload({

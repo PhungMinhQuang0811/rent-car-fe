@@ -6,6 +6,7 @@ export interface DatePickerInputProps {
   value: any;
   onChange: (value: any) => void;
   disabled?: boolean;
+  name?: string;
 }
 
 export default function DatePickerInput({
