@@ -1,0 +1,78 @@
+import React, { useState } from "react";
+import { TextField, Button, Box } from "@mui/material";
+
+export interface FileUploadProps {
+  label: string;
+  onFileChange: (file: File) => void;
+  preview?: string;
+  disabled?: boolean;
+}
+
+export default function FileUpload({
+  label,
+  onFileChange,
+  preview,
+  disabled,
+}: FileUploadProps) {
+  const [fileName, setFileName] = useState("");
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size < 5 * 1024 * 1024) {
+        setFileName(file.name);
+      }
+      onFileChange(file);
+    }
+  };
+
+  return (
+    <>
+      <TextField
+        fullWidth
+        variant="standard"
+        label={label}
+        value={fileName}
+        disabled={disabled}
+        InputProps={{
+          endAdornment: (
+            <Button
+              component="label"
+              variant="contained"
+              sx={{
+                height: "32px",
+                backgroundColor: "#05ce80",
+                color: "white",
+                "&:hover": { backgroundColor: "#04b16d" },
+              }}
+            >
+              Upload
+              <input
+                type="file"
+                hidden
+                accept="image/*"
+                disabled={disabled}
+                onChange={handleFileChange}
+              />
+            </Button>
+          ),
+        }}
+      />
+      {preview && (
+        <Box
+          component="img"
+          src={preview}
+          alt="Preview"
+          sx={{
+            width: "100%",
+            maxWidth: 300,
+            height: 160,
+            objectFit: "contain",
+            borderRadius: 2,
+            mt: 6,
+          }}
+        />
+      )}
+    </>
+  );
+}
