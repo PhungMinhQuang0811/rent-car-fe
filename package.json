@@ -39,6 +39,7 @@
     "xlsx": "^0.18.5"
   },
   "scripts": {
+    "dev": "react-scripts start",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d build",
     "start": "react-scripts start",
