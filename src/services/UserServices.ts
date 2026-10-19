@@ -167,7 +167,10 @@ export const updateUserPassword = async (
 
 export const logoutUser = async (): Promise<void> => {
   try {
+    const csrfToken = localStorage.getItem("csrfToken");
     await fetch(`${BASE_URL}/auth/logout`, {
+      method: "POST",
+      headers: csrfToken ? { "X-CSRF-TOKEN": csrfToken } : {},
       credentials: "include",
     });
 
