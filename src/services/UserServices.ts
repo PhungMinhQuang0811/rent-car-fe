@@ -129,11 +129,24 @@ export const getUserProfile = async (): Promise<ApiResponse<EditProfileResponse>
   }
 };
 
-export const updateUserProfile = async (formData: FormData): Promise<any> => {
+export interface UpdateUserProfileRequest {
+  fullName: string;
+  phoneNumber: string;
+  email: string;
+  nationalId: string;
+  cityProvince: string;
+  district: string;
+  ward: string;
+  houseNumberStreet: string;
+  dob: string | null;
+  drivingLicenseAssetId?: string;
+}
+
+export const updateUserProfile = async (request: UpdateUserProfileRequest): Promise<any> => {
   try {
-    const response = await axios.put(`${BASE_URL}/user/edit-profile`, formData, {
+    const response = await axios.put(`${BASE_URL}/user/edit-profile`, request, {
       headers: {
-        "Content-Type": "multipart/form-data",
+        "Content-Type": "application/json",
       },
       withCredentials: true,
     });
@@ -168,9 +181,13 @@ export const updateUserPassword = async (
 export const logoutUser = async (): Promise<void> => {
   try {
     const csrfToken = localStorage.getItem("csrfToken");
+    const headers: Record<string, string> = {};
+    if (csrfToken) {
+      headers["X-CSRF-TOKEN"] = csrfToken;
+    }
     await fetch(`${BASE_URL}/auth/logout`, {
       method: "POST",
-      headers: csrfToken ? { "X-CSRF-TOKEN": csrfToken } : {},
+      headers,
       credentials: "include",
     });
 

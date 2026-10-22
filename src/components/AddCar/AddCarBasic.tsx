@@ -23,6 +23,7 @@ import {
 } from "../../reducers/carReducer";
 import { useState, useEffect, useMemo } from "react";
 import { saveFileToDB, getFileFromDB } from "../../Helper/indexedDBHelper";
+import { uploadSelectedFile } from "../../services/UploadServices";
 import { store } from "../../redux/store";
 import CarStepper from "./CarStepper";
 import Footer from "../common/Footer";
@@ -81,7 +82,21 @@ export default function AddCarBasic() {
     });
 
     if (validFile) {
-      await saveFileToDB(fileType, validFile); // Save the file to IndexedDB
+      // Keep a local copy for the form and upload it immediately.
+      await saveFileToDB(fileType, validFile);
+      try {
+        const uploadedAsset = await uploadSelectedFile(validFile, "CAR_DOCUMENT");
+        dispatch(setCarData({ [`${fileType}AssetId`]: uploadedAsset.assetId } as any));
+      } catch (error: any) {
+        let message = "File upload failed. Please try again.";
+        if (error.response && error.response.data && error.response.data.message) {
+          message = error.response.data.message;
+        }
+        handleError(errorType, message);
+        setFiles((prev) => ({ ...prev, [fileType]: null }));
+        dispatch(setCarData({ [fileType]: "", [`${fileType}AssetId`]: "" } as any));
+        return;
+      }
 
       setFiles((prev) => ({
         ...prev,
@@ -101,7 +116,7 @@ export default function AddCarBasic() {
         : "Invalid file type! Only .doc, .docx, .pdf, .jpg, .jpeg, .png are allowed.";
       handleError(errorType, errorMessage); // Set error message
       setFiles((prev) => ({ ...prev, [fileType]: null })); // Remove the file from state
-      dispatch(setCarData({ [fileType]: "" })); // Clear the file name in Redux
+      dispatch(setCarData({ [fileType]: "", [`${fileType}AssetId`]: "" } as any)); // Clear the file name and uploaded ID
     }
   };
 

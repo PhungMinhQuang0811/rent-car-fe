@@ -1,5 +1,4 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
-import { getFileFromDB } from "../Helper/indexedDBHelper";
 import { toast } from "react-toastify";
 import axios from "axios";
 import { RootState } from "../redux/store";
@@ -13,39 +12,41 @@ export const addNewCar = createAsyncThunk(
       const state = getState() as RootState;
       const carData = state.cars.carData;
 
-      const formData = new FormData();
-
-      // list key to pick from carData
       const fileKeys = [
-        "carImageFront",
-        "carImageBack",
-        "carImageLeft",
-        "carImageRight",
-        "registrationPaper",
-        "insurance",
-        "certificateOfInspection",
-      ];
-
-      Object.entries(carData).forEach(([key, value]) => {
-        if (!fileKeys.includes(key)) {
-          formData.append(key, value as any);
-        }
-      });
-
-      // get file from IndexedDB and append
+        "carImageFront", "carImageBack", "carImageLeft", "carImageRight",
+        "registrationPaper", "insurance", "certificateOfInspection",
+      ] as const;
+      const uploadedAssetIds: Record<string, string> = {};
+      // Read IDs stored in Redux by each file picker after upload succeeds.
       for (const key of fileKeys) {
-        const file = await getFileFromDB(key);
-        if (file) {
-          formData.append(key, file);
+        const assetId = carData[`${key}AssetId`];
+        if (typeof assetId === "string" && assetId.length > 0) {
+          uploadedAssetIds[key] = assetId;
         }
       }
+      if (Object.keys(uploadedAssetIds).length !== fileKeys.length) {
+        return rejectWithValue("Wait for all selected car files to finish uploading.");
+      }
 
-      // Gửi request
+      const payload: Record<string, any> = {};
+      Object.entries(carData).forEach(([key, value]) => {
+        if (!fileKeys.includes(key as (typeof fileKeys)[number])) payload[key] = value;
+      });
+      // Attach every uploaded asset ID under the request field expected by the backend.
+      fileKeys.forEach((key) => {
+        let requestField = `${key}AssetId`;
+        if (key === "insurance") {
+          requestField = "insuranceAssetId";
+        }
+        payload[requestField] = uploadedAssetIds[key];
+      });
+
       const response = await axios.post(
         `${BASE_URL}/car/car-owner/add-car`,
-        formData,
+        payload,
         {
           withCredentials: true,
+          headers: { "Content-Type": "application/json" },
         }
       );
       toast.success(`Add Car Successful!`, {
@@ -74,7 +75,7 @@ export const addNewCar = createAsyncThunk(
 
       return response.data;
     } catch (error: any) {
-      toast.error(`Add Car Failed! license plate already exists`, {
+      toast.error(error.response?.data?.message || error.message || "Add Car Failed!", {
         position: "top-right",
         autoClose: 3000,
         hideProgressBar: true,

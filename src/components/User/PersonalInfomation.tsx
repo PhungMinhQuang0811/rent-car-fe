@@ -13,6 +13,7 @@ import AddressSelector from "../common/AddressSelector";
 import NotificationSnackbar from "../common/NotificationSnackbar";
 import ConfirmationDialog from "../common/ConfirmationDialog";
 import { updateUserProfile } from "../../services/UserServices";
+import { uploadFile } from "../../services/UploadServices";
 
 export interface PersonalInformationProps {
   initialData?: any;
@@ -20,12 +21,16 @@ export interface PersonalInformationProps {
 }
 
 export default function PersonalInformation({ initialData = {}, onlyView = false }: PersonalInformationProps) {
+  let initialDob: Dayjs | null = null;
+  if (initialData.dob) {
+    initialDob = dayjs(initialData.dob);
+  }
   const [formData, setFormData] = useState({
     fullName: initialData.fullName || "",
     phoneNumber: initialData.phoneNumber || "",
     email: initialData.email || "",
     nationalId: initialData.nationalId || "",
-    dob: initialData.dob ? dayjs(initialData.dob) : null,
+    dob: initialDob,
     cityProvince: initialData.cityProvince || "",
     district: initialData.district || "",
     ward: initialData.ward || "",
@@ -51,7 +56,11 @@ export default function PersonalInformation({ initialData = {}, onlyView = false
   const validateField = (name: string, value: any) => {
     let error = "";
     if (typeof value !== "string") {
-      value = value ? String(value) : "";
+      if (value) {
+        value = String(value);
+      } else {
+        value = "";
+      }
     }
     if (!value.trim()) error = "This field is required";
 
@@ -99,7 +108,10 @@ export default function PersonalInformation({ initialData = {}, onlyView = false
   };
 
   const handleDateChange = (date: Dayjs | null) => {
-    const newDate = date ? dayjs(date) : null;
+    let newDate: Dayjs | null = null;
+    if (date) {
+      newDate = dayjs(date);
+    }
     let error = "";
 
     if (!date) {
@@ -125,10 +137,14 @@ export default function PersonalInformation({ initialData = {}, onlyView = false
       setAlert({ open: true, message: "Can't upload file, file size must be under 5MB", severity: "error" });
       return;
     }
+    let preview: string | null = null;
+    if (file) {
+      preview = URL.createObjectURL(file);
+    }
     setFormData({
       ...formData,
       drivingLicenseFile: file,
-      drivingLicensePreview: file ? URL.createObjectURL(file) : null,
+      drivingLicensePreview: preview,
     });
   };
 
@@ -137,34 +153,34 @@ export default function PersonalInformation({ initialData = {}, onlyView = false
 
     setOpenConfirm(true);
     setConfirmAction(() => async () => {
-      const formDataToSend = new FormData();
-      formDataToSend.append("fullName", formData.fullName);
-      formDataToSend.append("phoneNumber", formData.phoneNumber);
-      formDataToSend.append("email", formData.email);
-      formDataToSend.append("nationalId", formData.nationalId);
-      formDataToSend.append("cityProvince", formData.cityProvince);
-      formDataToSend.append("district", formData.district);
-      formDataToSend.append("ward", formData.ward);
-      formDataToSend.append("houseNumberStreet", formData.houseNumberStreet);
-      if (formData.dob) {
-        formDataToSend.append("dob", (formData.dob as Dayjs).format("YYYY-MM-DD"));
-      }
-
-      if (formData.drivingLicenseFile) {
-        if (formData.drivingLicenseFile instanceof File) {
-          formDataToSend.append("drivingLicense", formData.drivingLicenseFile);
-        } else {
-          formDataToSend.append("drivingLicenseUrl", formData.drivingLicenseFile);
-        }
-      } else if (formData.drivingLicensePreview) {
-        formDataToSend.append("drivingLicenseUrl", formData.drivingLicensePreview);
-      }
-
       try {
-        await updateUserProfile(formDataToSend);
+        let formattedDob: string | null = null;
+        if (formData.dob) {
+          formattedDob = (formData.dob as Dayjs).format("YYYY-MM-DD");
+        }
+        const request: Parameters<typeof updateUserProfile>[0] = {
+          fullName: formData.fullName,
+          phoneNumber: formData.phoneNumber,
+          email: formData.email,
+          nationalId: formData.nationalId,
+          cityProvince: formData.cityProvince,
+          district: formData.district,
+          ward: formData.ward,
+          houseNumberStreet: formData.houseNumberStreet,
+          dob: formattedDob,
+        };
+        if (formData.drivingLicenseFile instanceof File) {
+          const uploaded = await uploadFile(formData.drivingLicenseFile, "PROFILE_DRIVER_LICENSE");
+          request.drivingLicenseAssetId = uploaded.assetId;
+        }
+        await updateUserProfile(request);
         setAlert({ open: true, message: "Profile Updated Successfully!", severity: "success" });
       } catch (error: any) {
-        setAlert({ open: true, message: error.response?.data?.message || "Profile Updated Failed!", severity: "error" });
+        let message = "Profile Updated Failed!";
+        if (error.response && error.response.data && error.response.data.message) {
+          message = error.response.data.message;
+        }
+        setAlert({ open: true, message, severity: "error" });
       }
       setOpenConfirm(false);
     });
@@ -175,9 +191,13 @@ export default function PersonalInformation({ initialData = {}, onlyView = false
     setConfirmAction(() => () => {
       setAlert({ open: true, message: "Discard Change Successfully!", severity: "success" });
       setErrorMsg({});
+      let originalDob: Dayjs | null = null;
+      if (initialData.dob) {
+        originalDob = dayjs(initialData.dob);
+      }
       setFormData({
         ...initialData,
-        dob: initialData.dob ? dayjs(initialData.dob) : null,
+        dob: originalDob,
         drivingLicenseFile: initialData.drivingLicenseUrl || null,
         drivingLicensePreview: initialData.drivingLicenseUrl || null,
       });
@@ -185,11 +205,16 @@ export default function PersonalInformation({ initialData = {}, onlyView = false
     });
   };
 
+  let heading = "Personal Information";
+  if (onlyView) {
+    heading = "Driver's Information";
+  }
+
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <Box sx={{ p: 4, borderRadius: 2 }}>
         <Typography variant="h5" gutterBottom>
-          {onlyView ? "Driver's Information" : "Personal Information"}
+          {heading}
         </Typography>
         <Grid container spacing={2}>
           <Grid item xs={12}>

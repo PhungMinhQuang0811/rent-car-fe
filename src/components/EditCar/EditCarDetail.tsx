@@ -43,6 +43,7 @@ import { Skeleton } from "@mui/material";
 import { updateCar } from "../../reducers/carFetchReducer";
 import { store } from "../../redux/store";
 import axios from "axios";
+import { uploadSelectedFile } from "../../services/UploadServices";
 
 interface OptionType {
   label: string;
@@ -101,6 +102,7 @@ export default function EditCarDetail() {
   const handleDeleteImage = async (fileType: string) => {
     await deleteFileFromDB(fileType); // Xóa file khỏi IndexedDB
 
+    dispatch(setCar({ [`${fileType}AssetId`]: "" }));
     setImagePreviews((prev) => ({
       ...prev,
       [fileType]: null, // Xóa ảnh xem trước
@@ -122,6 +124,18 @@ export default function EditCarDetail() {
 
         if (validFile) {
           await saveFileToDB(fileType, validFile); // Save file to IndexedDB
+          try {
+            // Upload the replacement image immediately and keep its ID in Redux.
+            const uploadedAsset = await uploadSelectedFile(validFile, "CAR_IMAGE");
+            dispatch(setCar({ [`${fileType}AssetId`]: uploadedAsset.assetId }));
+          } catch (error: any) {
+            let message = "File upload failed. Please try again.";
+            if (error.response && error.response.data && error.response.data.message) {
+              message = error.response.data.message;
+            }
+            dispatch(setErrors({ ...errors, [errorType]: message }));
+            return;
+          }
 
           setImagePreviews((prev) => ({
             ...prev,

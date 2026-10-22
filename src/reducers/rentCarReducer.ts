@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit"; // API gọi đến backend
 import { toast } from "react-toastify";
 import { getFileFromDB } from "../Helper/indexedDBHelper";
+import { uploadFile } from "../services/UploadServices";
 import axios from "axios";
 import { RootState } from "../redux/store";
 
@@ -99,51 +100,36 @@ export const createBooking = createAsyncThunk(
   "rentCar/createBooking",
   async (carId: string | number, { getState, rejectWithValue }) => {
     try {
-      const formData = new FormData();
       const state = getState() as any;
+      let renter: Record<string, any>;
+      const isDifferentDriver = state.rentCar.infor.driver === true;
 
-      if (state.rentCar.infor.driver === false) {
-        const renter = state.rentCar.infor.data;
-        Object.entries(renter).forEach(([key, value]) => {
-          formData.append(key, value as any);
-        });
-        formData.append("driver", "false");
-      } else {
-        const renter = state.rentCar.infor.renter;
+      if (isDifferentDriver) {
+        renter = state.rentCar.infor.renter;
         const file = await getFileFromDB("driverDrivingLicense");
-        if (file) {
-          formData.append("driverDrivingLicense", file);
-        }
-        Object.entries(renter).forEach(([key, value]) => {
-          formData.append(key, value as any);
-        });
-        formData.append("driver", "true");
+        if (!(file instanceof Blob)) return rejectWithValue("Upload the other driver's license first.");
+        const uploaded = await uploadFile(file, "BOOKING_DRIVER_LICENSE");
+        renter = { ...renter, driverDrivingLicenseAssetId: uploaded.assetId };
+      } else {
+        renter = state.rentCar.infor.data;
       }
 
-      formData.append(
-        "pickUpLocation",
-        state.rentCar.infor.data.driverCityProvince +
-          ", " +
-          state.rentCar.infor.data.driverDistrict +
-          ", " +
-          state.rentCar.infor.data.driverWard +
-          ", " +
-          state.rentCar.infor.data.driverHouseNumberStreet
-      );
-
-      formData.append("pickUpTime", state.rental.pickUpTime.replace("Z", ""));
-      formData.append("dropOffTime", state.rental.dropOffTime.replace("Z", ""));
-      formData.append("paymentType", state.rentCar.infor.paymentType);
-
-      formData.append("carId", String(carId));
+      const profile = state.rentCar.infor.data;
+      const payload = {
+        ...renter,
+        driver: isDifferentDriver,
+        pickUpLocation: [profile.driverCityProvince, profile.driverDistrict, profile.driverWard, profile.driverHouseNumberStreet].join(", "),
+        pickUpTime: state.rental.pickUpTime.replace("Z", ""),
+        dropOffTime: state.rental.dropOffTime.replace("Z", ""),
+        paymentType: state.rentCar.infor.paymentType,
+        carId: String(carId),
+      };
       const response = await axios.post(
         `${BASE_URL}/booking/customer/create-book`,
-        formData,
+        payload,
         {
-          withCredentials: true, // Để gửi cookie nếu cần
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
+          withCredentials: true,
+          headers: { "Content-Type": "application/json" },
         }
       );
 
@@ -263,29 +249,23 @@ export const saveBooking = createAsyncThunk(
   "rentCar/saveBooking",
   async (_, { getState, rejectWithValue }) => {
     try {
-      const formData = new FormData();
       const state = getState() as any;
-      const renter = state.rentCar.infor.data;
+      let renter = state.rentCar.infor.data;
 
       if (renter.driver === true) {
         const file = await getFileFromDB("driverDrivingLicense");
-        if (file) {
-          formData.append("driverDrivingLicense", file);
+        if (file instanceof Blob) {
+          const uploaded = await uploadFile(file, "BOOKING_DRIVER_LICENSE");
+          renter = { ...renter, driverDrivingLicenseAssetId: uploaded.assetId };
         }
       }
 
-      Object.entries(renter).forEach(([key, value]) => {
-        formData.append(key, value as any);
-      });
-
       const response = await axios.put(
         `${BASE_URL}/booking/customer/edit-book/${renter.bookingNumber}`,
-        formData,
+        renter,
         {
-          withCredentials: true, // Để gửi cookie nếu cần
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
+          withCredentials: true,
+          headers: { "Content-Type": "application/json" },
         }
       );
 

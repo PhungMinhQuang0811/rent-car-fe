@@ -1,7 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { toast } from "react-toastify";
 import axios from "axios";
-import { getFileFromDB, getAllKeysFromDB } from "../Helper/indexedDBHelper";
 import { RootState } from "../redux/store";
 
 const BASE_URL = process.env.REACT_APP_BASE_URL;
@@ -58,27 +57,7 @@ export const updateCar = createAsyncThunk(
       const state = getState() as RootState;
       const carData = (state.carFetch as any).carData.data;
 
-      const formData = new FormData();
-
-      Object.entries(carData).forEach(([key, value]) => {
-        if (
-          ![
-            "carImageFront",
-            "carImageBack",
-            "carImageLeft",
-            "carImageRight",
-            "registrationPaper",
-            "insurance",
-            "certificateOfInspection",
-          ].includes(key)
-        ) {
-          formData.append(key, value as any);
-        }
-      });
-
-      const existingKeys = await getAllKeysFromDB();
-
-      const imageKeys = [
+      const fileKeys = [
         "carImageFront",
         "carImageBack",
         "carImageLeft",
@@ -87,24 +66,32 @@ export const updateCar = createAsyncThunk(
         "insurance",
         "certificateOfInspection",
       ];
-
-      for (const key of imageKeys) {
-        if (existingKeys.includes(key)) {
-          const file = await getFileFromDB(key);
-          if (file) {
-            formData.append(key, file);
-          }
+      const uploadedAssetIds: Record<string, string> = {};
+      // Read replacement IDs saved in Redux by the file selection handlers.
+      for (const key of fileKeys) {
+        const assetId = carData[`${key}AssetId`];
+        if (typeof assetId === "string" && assetId.length > 0) {
+          uploadedAssetIds[key] = assetId;
         }
       }
+      const payload: Record<string, any> = {};
+      Object.entries(carData).forEach(([key, value]) => {
+        if (!fileKeys.includes(key)) payload[key] = value;
+      });
+      Object.entries(uploadedAssetIds).forEach(([key, assetId]) => {
+        let requestField = `${key}AssetId`;
+        if (key === "insurance") {
+          requestField = "insuranceAssetId";
+        }
+        payload[requestField] = assetId;
+      });
 
       const response = await axios.put(
         `${BASE_URL}/car/car-owner/edit-car/${carData.id}`,
-        formData,
+        payload,
         {
           withCredentials: true,
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
+          headers: { "Content-Type": "application/json" },
         }
       );
 
@@ -134,7 +121,7 @@ export const updateCar = createAsyncThunk(
 
       return response.data;
     } catch (error: any) {
-      toast.error(`Update Car failed!`, {
+      toast.error(error.response?.data?.message || error.message || "Update Car failed!", {
         position: "top-right",
         autoClose: 3000,
         hideProgressBar: true,

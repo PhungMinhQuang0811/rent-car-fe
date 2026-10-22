@@ -11,8 +11,9 @@ import {
   Box,
 } from "@mui/material";
 import { useAppDispatch, useAppSelector } from "../../redux/hooks";
-import { setErrors } from "../../reducers/carFetchReducer";
+import { setErrors, setCar } from "../../reducers/carFetchReducer";
 import { saveFileToDB } from "../../Helper/indexedDBHelper";
+import { uploadSelectedFile } from "../../services/UploadServices";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
@@ -85,7 +86,18 @@ const DocumentEdit: React.FC = () => {
       });
 
       if (validFile) {
-        await saveFileToDB(fileType, validFile); // Save the file to IndexedDB
+        // Upload the new document as soon as the owner selects it.
+        try {
+          const uploadedAsset = await uploadSelectedFile(validFile, "CAR_DOCUMENT");
+          dispatch(setCar({ [`${fileType}AssetId`]: uploadedAsset.assetId }));
+          await saveFileToDB(fileType, validFile);
+        } catch (error: any) {
+          let message = "File upload failed. Please try again.";
+          if (error.response && error.response.data && error.response.data.message) {
+            message = error.response.data.message;
+          }
+          handleError(errorType, message);
+        }
       } else {
         const errorMessage = files.some((file) => file.size > MAX_FILE_SIZE)
           ? "File size must be less than 5MB."

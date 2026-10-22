@@ -42,6 +42,7 @@ import {
   getFileFromDB,
 } from "../../Helper/indexedDBHelper";
 import { store } from "../../redux/store";
+import { uploadSelectedFile } from "../../services/UploadServices";
 import CarStepper from "./CarStepper";
 import axios from "axios";
 import Header from "../common/Header";
@@ -104,7 +105,7 @@ export default function AddCarDetails() {
       [fileType]: null, // delete file from state
     }));
 
-    dispatch(setCarData({ [fileType]: "" })); // delete file from Redux
+    dispatch(setCarData({ [fileType]: "", [`${fileType}AssetId`]: "" } as any)); // delete file and uploaded ID
 
     setImagePreviews((prev) => ({
       ...prev,
@@ -144,6 +145,20 @@ export default function AddCarDetails() {
 
     if (validFile) {
       await saveFileToDB(fileType, validFile); // Save file to IndexedDB
+      try {
+        const uploadedAsset = await uploadSelectedFile(validFile, "CAR_IMAGE");
+        dispatch(setCarData({ [`${fileType}AssetId`]: uploadedAsset.assetId } as any));
+      } catch (error: any) {
+        let message = "File upload failed. Please try again.";
+        if (error.response && error.response.data && error.response.data.message) {
+          message = error.response.data.message;
+        }
+        handleError(errorType, message);
+        setFiles((prev) => ({ ...prev, [fileType]: null }));
+        setImagePreviews((prev) => ({ ...prev, [fileType]: null }));
+        dispatch(setCarData({ [fileType]: "", [`${fileType}AssetId`]: "" } as any));
+        return;
+      }
 
       setFiles((prev) => ({
         ...prev,
@@ -164,7 +179,7 @@ export default function AddCarDetails() {
       handleError(errorType, errorMessage);
       setFiles((prev) => ({ ...prev, [fileType]: null })); // delete file from state
       setImagePreviews((prev) => ({ ...prev, [fileType]: null })); // delete preview from state
-      dispatch(setCarData({ [fileType]: "" })); // delete file from Redux
+      dispatch(setCarData({ [fileType]: "", [`${fileType}AssetId`]: "" } as any)); // clear the name and uploaded ID
     }
   };
 
